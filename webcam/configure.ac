@@ -4,8 +4,6 @@
 AC_PREREQ([2.69])
 AC_INIT([trik-media-sensors],[0.0.2-trunk])
 AM_INIT_AUTOMAKE([foreign color-tests -Wall -Werror])
-#AC_CONFIG_SRCDIR([object_sensor/src])
-#		  line_sensor/src])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -61,13 +59,15 @@ AC_CONFIG_FILES([Makefile
 		 object_sensor/Makefile
 		 object_sensor/src/Makefile
 		 line_sensor/Makefile
-                 line_sensor/src/Makefile])
-#                 edge_line_sensor/Makefile
-#                 edge_line_sensor/build/Makefile
-#                 mxn_sensor/Makefile
-#                 mxn_sensor/build/Makefile
-#		 jpeg_encoder/Makefile
-#                 jpeg_encoder/build/Makefile])
+                 line_sensor/src/Makefile
+                 edge_line_sensor/Makefile
+                 edge_line_sensor/src/Makefile
+                 mxn_sensor/Makefile
+                 mxn_sensor/src/Makefile
+                 motion_sensor/Makefile
+                 motion_sensor/src/Makefile
+		 jpeg_encoder/Makefile
+                 jpeg_encoder/src/Makefile])
 
 AC_OUTPUT
 

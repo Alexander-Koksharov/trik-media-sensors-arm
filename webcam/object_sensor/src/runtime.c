@@ -17,10 +17,9 @@
 static const RuntimeConfig s_runtimeConfig = {
   .m_verbose = false,
   .m_codecEngineConfig = { "dsp_server.xe674", "vidtranscode_cv" },
-  .m_v4l2Config        = { "/dev/video0", 320, 240, V4L2_PIX_FMT_YUYV },
+  .m_v4l2Config        = { "/dev/video0", 640, 480, V4L2_PIX_FMT_YUV422P },
   .m_fbConfig          = { "/dev/fb0" },
-  .m_rcConfig          = { "/run/object-sensor.in.fifo", "/run/object-sensor.out.fifo", true },
-  .m_reopenVideoTries  = 3
+  .m_rcConfig          = { "/run/object-sensor.in.fifo", "/run/object-sensor.out.fifo", true  }
 };
 
 
@@ -47,9 +46,6 @@ void runtimeReset(Runtime* _runtime)
   pthread_mutex_init(&_runtime->m_state.m_mutex, NULL);
   memset(&_runtime->m_state.m_targetDetectParams,  0, sizeof(_runtime->m_state.m_targetDetectParams));
   memset(&_runtime->m_state.m_targetDetectCommand, 0, sizeof(_runtime->m_state.m_targetDetectCommand));
-  
-  _runtime->m_state.m_reopenVideoFlag = false;
-  _runtime->m_state.m_reopenVideoCnt = 0;
 }
 
 
@@ -74,7 +70,6 @@ bool runtimeParseArgs(Runtime* _runtime, int _argc, char* const _argv[])
     { "rc-fifo-in",		1,	NULL,	0   }, // 7
     { "rc-fifo-out",		1,	NULL,	0   },
     { "video-out",		1,	NULL,	0   },
-    { "reopen-tries",		1,	NULL,	0   },
     { "verbose",		0,	NULL,	'v' },
     { "help",			0,	NULL,	'h' },
     { NULL,			0,	NULL,	0   }
@@ -107,21 +102,20 @@ bool runtimeParseArgs(Runtime* _runtime, int _argc, char* const _argv[])
             else if (!strcasecmp(optarg, "rgb565x"))	cfg->m_v4l2Config.m_format = V4L2_PIX_FMT_RGB565X;
             else if (!strcasecmp(optarg, "yuv444"))	cfg->m_v4l2Config.m_format = V4L2_PIX_FMT_YUV32;
             else if (!strcasecmp(optarg, "yuv422"))	cfg->m_v4l2Config.m_format = V4L2_PIX_FMT_YUYV;
+            else if (!strcasecmp(optarg, "yuv422p"))	cfg->m_v4l2Config.m_format = V4L2_PIX_FMT_YUV422P;
             else
             {
               fprintf(stderr, "Unknown v4l2 format '%s'\n"
-                              "Known formats: rgb888, rgb565, rgb565x, yuv444, yuv422\n",
+                              "Known formats: rgb888, rgb565, rgb565x, yuv444, yuv422, yuv422p\n",
                       optarg);
               return false;
             }
             break;
-
           case 6: cfg->m_fbConfig.m_path = optarg;						break;
 
           case 7  : cfg->m_rcConfig.m_fifoInput  = optarg;					break;
           case 7+1: cfg->m_rcConfig.m_fifoOutput = optarg;					break;
-          case 9:  cfg->m_rcConfig.m_videoOutEnable = atoi(optarg); break;
-          case 10: cfg->m_reopenVideoTries = atoi(optarg); break;
+          case 7+2: cfg->m_rcConfig.m_videoOutEnable = atoi(optarg); break;
 
           default:
             return false;
@@ -158,7 +152,6 @@ void runtimeArgsHelpMessage(Runtime* _runtime, const char* _arg0)
                   "   --rc-fifo-in            <remote-control-fifo-input>\n"
                   "   --rc-fifo-out           <remote-control-fifo-output>\n"
                   "   --video-out             <enable-video-output>\n"
-                  "   --reopen-tries          <failed-video-reopen-tries>\n"
                   "   --verbose\n"
                   "   --help\n",
           _arg0);
@@ -262,7 +255,7 @@ int runtimeStart(Runtime* _runtime)
   return 0;
 
 
- exit_join_video_thread:
+ //exit_join_video_thread:
   runtimeSetTerminate(_runtime);
   pthread_cancel(rt->m_videoThread);
   pthread_join(rt->m_videoThread, NULL);
@@ -400,6 +393,7 @@ int runtimeGetTargetDetectParams(Runtime* _runtime, TargetDetectParams* _targetD
 
   pthread_mutex_lock(&_runtime->m_state.m_mutex);
   *_targetDetectParams = _runtime->m_state.m_targetDetectParams;
+  _runtime->m_state.m_targetDetectParams.m_setHsvRange = false;
   pthread_mutex_unlock(&_runtime->m_state.m_mutex);
   return 0;
 }

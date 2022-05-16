@@ -23,7 +23,6 @@ typedef struct RuntimeConfig
   V4L2Config         m_v4l2Config;
   FBConfig           m_fbConfig;
   RCConfig           m_rcConfig;
-  int                m_reopenVideoTries;
 } RuntimeConfig;
 
 typedef struct RuntimeModules
@@ -48,10 +47,6 @@ typedef struct RuntimeState
   TargetDetectParams      m_targetDetectParams;
   TargetDetectCommand     m_targetDetectCommand;
   bool                    m_videoOutEnable;
-  
-  int                     m_reopenVideoTries;
-  int                     m_reopenVideoCnt;
-  bool                    m_reopenVideoFlag;
 } RuntimeState;
 
 typedef struct Runtime

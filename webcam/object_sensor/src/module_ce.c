@@ -88,6 +88,7 @@ static XDAS_Int32 do_convertPixelFormat(CodecEngine* _ce, uint32_t _format)
     case V4L2_PIX_FMT_RGB565X:	return TRIK_VIDTRANSCODE_CV_VIDEO_FORMAT_RGB565X;
     case V4L2_PIX_FMT_YUV32:	return TRIK_VIDTRANSCODE_CV_VIDEO_FORMAT_YUV444;
     case V4L2_PIX_FMT_YUYV:	return TRIK_VIDTRANSCODE_CV_VIDEO_FORMAT_YUV422;
+    case V4L2_PIX_FMT_YUV422P:	return TRIK_VIDTRANSCODE_CV_VIDEO_FORMAT_YUV422P;
     default:
       fprintf(stderr, "Unknown pixel format %c%c%c%c\n",
               _format&0xff, (_format>>8)&0xff, (_format>>16)&0xff, (_format>>24)&0xff);
@@ -216,12 +217,13 @@ static int do_transcodeFrame(CodecEngine* _ce,
   tcInArgs.base.size = sizeof(tcInArgs);
   tcInArgs.base.numBytes = _srcFrameSize;
   tcInArgs.base.inputID = 1; // must be non-zero, otherwise caching issues appear
-  tcInArgs.alg.detectHueFrom = makeValueWrap( _targetDetectParams->m_detectHue, -_targetDetectParams->m_detectHueTolerance, 0, 359);
-  tcInArgs.alg.detectHueTo   = makeValueWrap( _targetDetectParams->m_detectHue, +_targetDetectParams->m_detectHueTolerance, 0, 359);
-  tcInArgs.alg.detectSatFrom = makeValueRange(_targetDetectParams->m_detectSat, -_targetDetectParams->m_detectSatTolerance, 0, 100);
-  tcInArgs.alg.detectSatTo   = makeValueRange(_targetDetectParams->m_detectSat, +_targetDetectParams->m_detectSatTolerance, 0, 100);
-  tcInArgs.alg.detectValFrom = makeValueRange(_targetDetectParams->m_detectVal, -_targetDetectParams->m_detectValTolerance, 0, 100);
-  tcInArgs.alg.detectValTo   = makeValueRange(_targetDetectParams->m_detectVal, +_targetDetectParams->m_detectValTolerance, 0, 100);
+  tcInArgs.alg.setHsvRange = _targetDetectParams->m_setHsvRange;
+  tcInArgs.alg.detectHue       = _targetDetectParams->m_detectHue;
+  tcInArgs.alg.detectHueTol   = _targetDetectParams->m_detectHueTolerance;
+  tcInArgs.alg.detectSat       = _targetDetectParams->m_detectSat;
+  tcInArgs.alg.detectSatTol   = _targetDetectParams->m_detectSatTolerance;
+  tcInArgs.alg.detectVal       = _targetDetectParams->m_detectVal;
+  tcInArgs.alg.detectValTol   = _targetDetectParams->m_detectValTolerance;
   tcInArgs.alg.autoDetectHsv = _targetDetectCommand->m_cmd;
 
   TRIK_VIDTRANSCODE_CV_OutArgs tcOutArgs;
@@ -277,10 +279,13 @@ static int do_transcodeFrame(CodecEngine* _ce,
   if(_ce->m_videoOutEnable)
     memcpy(_dstFramePtr, _ce->m_dstBuffer, *_dstFrameUsed);
 
-  _targetLocation->m_targetX    = tcOutArgs.alg.targetX;
-  _targetLocation->m_targetY    = tcOutArgs.alg.targetY;
-  _targetLocation->m_targetSize = tcOutArgs.alg.targetSize;
 
+  memcpy(&(_targetLocation->target[0]), &(tcOutArgs.alg.target[0]), sizeof(Target));
+/*
+  _targetLocation->m_targetX    = tcOutArgs.alg.target[0].x;
+  _targetLocation->m_targetY    = tcOutArgs.alg.target[0].y;
+  _targetLocation->m_targetSize = tcOutArgs.alg.target[0].size;
+*/
   _targetDetectParamsResult->m_detectHue          = tcOutArgs.alg.detectHue;
   _targetDetectParamsResult->m_detectHueTolerance = tcOutArgs.alg.detectHueTolerance;
   _targetDetectParamsResult->m_detectSat          = tcOutArgs.alg.detectSat;
@@ -353,33 +358,6 @@ int codecEngineFini()
 }
 
 
-int codecEngineAdd(CodecEngine* _ce, const CodecEngineConfig* _config)
-{
-  if (_ce == NULL || _config == NULL)
-    return EINVAL;
-
-  if (_ce->m_handle != NULL)
-    return EALREADY;
-
-  Engine_Error ceError;
-  Engine_Desc desc;
-  Engine_initDesc(&desc);
-  desc.name = "dsp-server";
-  desc.remoteName = strdup(_config->m_serverPath);
-  errno = 0;
-
-  ceError = Engine_add(&desc);
-  if (ceError != Engine_EOK)
-  {
-    free(desc.remoteName);
-    fprintf(stderr, "Engine_add(%s) failed: %d/%"PRIi32"\n", _config->m_serverPath, errno, ceError);
-    return ENOMEM;
-  }
-
-  return 0;
-}
-
-
 int codecEngineOpen(CodecEngine* _ce, const CodecEngineConfig* _config)
 {
   if (_ce == NULL || _config == NULL)
@@ -394,7 +372,7 @@ int codecEngineOpen(CodecEngine* _ce, const CodecEngineConfig* _config)
   desc.name = "dsp-server";
   desc.remoteName = strdup(_config->m_serverPath);
   errno = 0;
-/*
+
   ceError = Engine_add(&desc);
   if (ceError != Engine_EOK)
   {
@@ -403,7 +381,7 @@ int codecEngineOpen(CodecEngine* _ce, const CodecEngineConfig* _config)
     return ENOMEM;
   }
   free(desc.remoteName);
-*/
+
   if ((_ce->m_handle = Engine_open("dsp-server", NULL, &ceError)) == NULL)
   {
     fprintf(stderr, "Engine_open(%s) failed: %d/%"PRIi32"\n", _config->m_serverPath, errno, ceError);
@@ -494,11 +472,11 @@ int codecEngineTranscodeFrame(CodecEngine* _ce,
   {
     fprintf(stderr, "Transcoded frame %p[%zu] -> %p[%zu/%zu]\n",
             _srcFramePtr, _srcFrameSize, _dstFramePtr, _dstFrameSize, *_dstFrameUsed);
-    if (_targetLocation->m_targetSize > 0)
+    if (_targetLocation->target[0].size > 0)
       fprintf(stderr, "Target detected at %d x %d @ %d\n",
-              _targetLocation->m_targetX,
-              _targetLocation->m_targetY,
-              _targetLocation->m_targetSize);
+              _targetLocation->target[0].x,
+              _targetLocation->target[0].y,
+              _targetLocation->target[0].size);
   }
 
   return res;

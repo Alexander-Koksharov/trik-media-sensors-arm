@@ -44,7 +44,6 @@ typedef struct CodecEngine
 int codecEngineInit(bool _verbose);
 int codecEngineFini();
 
-int codecEngineAdd(CodecEngine* _ce, const CodecEngineConfig* _config);
 int codecEngineOpen(CodecEngine* _ce, const CodecEngineConfig* _config);
 int codecEngineClose(CodecEngine* _ce);
 int codecEngineStart(CodecEngine* _ce, const CodecEngineConfig* _config,
