@@ -48,8 +48,7 @@ static int do_fbOutputClose(FBOutput* _fb)
     fprintf(stderr, "close() failed: %d\n", res);
     return res;
   }
-  _fb->m_fd = -1;
-  
+
   return 0;
 }
 
