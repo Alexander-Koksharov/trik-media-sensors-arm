@@ -305,7 +305,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 MAIN_TARGET_NAME = motion_sensor_arm
 DSP_HEADERS_DIR = $(srcdir)/../../../../trik-media-sensors-dsp/trik/webcam/motion_sensor/
-AM_CPPFLAGS = -I$(DSP_HEADERS_DIR) -I../include -Wall -Wextra 
+AM_CPPFLAGS = -I$(DSP_HEADERS_DIR) -I$(srcdir)/../include -Wall -Wextra
 AM_CXXFLAGS = -Weffc++
 motion_sensor_arm_SOURCES = main.c \
 		                  module_ce.c \
