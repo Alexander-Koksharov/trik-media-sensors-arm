@@ -1,0 +1,14 @@
+prefix=/usr
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+tidepot=/../../../../../../../../../../<YOUR TI DEPOT LOCATION>
+
+Name: libcodecengine-client
+Description: libcodecengine-client 0.0.3-trunk
+Requires: 
+Version: 0.0.3-trunk
+
+Libs: -L${libdir} -L${tidepot}/xdctools_3_25_06_96/packages -L${tidepot}/xdais_7_24_00_04/packages -L${tidepot}/codec_engine_3_23_00_07/packages -L${tidepot}/framework_components_3_24_02_15/packages -L${tidepot}/osal_1_24_00_09/packages -L${tidepot}/linuxutils_3_23_00_01/packages -L${tidepot}/syslink_2_21_03_11/packages -Wl,--start-group,-lcodecengine-client,-L${tidepot}/codec_engine_3_23_00_07/cetools/packages/,${tidepot}/codec_engine_3_23_00_07/packages/ti/sdo/ce/utils/rtcfg/linux/OMAP3530/ce_remote_release.cmd,${tidepot}/codec_engine_3_23_00_07/packages/ti/sdo/ce/utils/rtcfg/linux/OMAP3530/fc_release.cmd,--end-group -lpthread -lrt -ldl
+Libs.private:
+Cflags: -Dxdc_target_types__=gnu/targets/arm/std.h -Dxdc_target_name__=GCArmv5T -I${includedir} -I${tidepot}/xdctools_3_25_06_96/packages -I${tidepot}/xdais_7_24_00_04/packages -I${tidepot}/codec_engine_3_23_00_07/packages

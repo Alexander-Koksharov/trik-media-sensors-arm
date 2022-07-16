@@ -1,7 +1,7 @@
 MAIN_TARGET_NAME        = jpeg_encoder_arm
 DSP_HEADERS_DIR         = $(srcdir)/../../../../trik-media-sensors-dsp/trik/webcam/jpeg_encoder/
 
-AM_CPPFLAGS		= -I$(DSP_HEADERS_DIR) -I../include -Wall -Wextra
+AM_CPPFLAGS		= -I$(DSP_HEADERS_DIR) -I$(srcdir)/../include -Wall -Wextra
 AM_CXXFLAGS		= -Weffc++
 
 bin_PROGRAMS		= $(MAIN_TARGET_NAME)
